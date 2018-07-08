@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cublas_demo", "cublas_demo\cublas_demo.vcxproj", "{3CA5EE50-EE05-4D73-BC53-A3761129319A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ELM", "ELM\ELM.vcxproj", "{B5684C16-85A9-4D4D-B31C-F9180F03F49B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3CA5EE50-EE05-4D73-BC53-A3761129319A}.Debug|Win32.ActiveCfg = Debug|x64
+		{3CA5EE50-EE05-4D73-BC53-A3761129319A}.Debug|Win32.Build.0 = Debug|x64
+		{3CA5EE50-EE05-4D73-BC53-A3761129319A}.Debug|x64.ActiveCfg = Debug|x64
+		{3CA5EE50-EE05-4D73-BC53-A3761129319A}.Debug|x64.Build.0 = Debug|x64
+		{3CA5EE50-EE05-4D73-BC53-A3761129319A}.Release|Win32.ActiveCfg = Release|Win32
+		{3CA5EE50-EE05-4D73-BC53-A3761129319A}.Release|Win32.Build.0 = Release|Win32
+		{3CA5EE50-EE05-4D73-BC53-A3761129319A}.Release|x64.ActiveCfg = Release|x64
+		{3CA5EE50-EE05-4D73-BC53-A3761129319A}.Release|x64.Build.0 = Release|x64
+		{B5684C16-85A9-4D4D-B31C-F9180F03F49B}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B5684C16-85A9-4D4D-B31C-F9180F03F49B}.Debug|Win32.Build.0 = Debug|Win32
+		{B5684C16-85A9-4D4D-B31C-F9180F03F49B}.Debug|x64.ActiveCfg = Debug|x64
+		{B5684C16-85A9-4D4D-B31C-F9180F03F49B}.Debug|x64.Build.0 = Debug|x64
+		{B5684C16-85A9-4D4D-B31C-F9180F03F49B}.Release|Win32.ActiveCfg = Release|Win32
+		{B5684C16-85A9-4D4D-B31C-F9180F03F49B}.Release|Win32.Build.0 = Release|Win32
+		{B5684C16-85A9-4D4D-B31C-F9180F03F49B}.Release|x64.ActiveCfg = Release|x64
+		{B5684C16-85A9-4D4D-B31C-F9180F03F49B}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
