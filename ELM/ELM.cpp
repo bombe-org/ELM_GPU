@@ -127,6 +127,8 @@ int elmTrain(double *X, int dims, int nsmp,
 	double ipiv = 0.1;	
 	sdkResetTimer(&timer);
 	sdkStartTimer(&timer);
+	culaDeviceSgetrf(nhn,nhn,device_A,nhn,&ipiv);
+	culaDeviceSgetri(nhn,device_A,nhn,&ipiv);
 	culaDeviceSgemm('N','N',7,nhn,nhn,1,device_b,7,device_A,nhn,0,device_outw,7);
 	cudaThreadSynchronize();
 	sdkStopTimer(&timer);  
