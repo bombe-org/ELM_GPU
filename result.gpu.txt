@@ -1,0 +1,28 @@
+covtype
+2
+loading data finished
+preparing data finished
+offloading cost:39.2162ms
+computing A:128.268ms
+computing b:8.85058ms
+solving:0.0422717ms
+
+sonar
+2
+loading data finished
+preparing data finished
+offloading cost:1.27921ms
+computing A:0.318815ms
+computing b:0.152099ms
+solving:0.101531ms
+training finished
+
+IONOSPHERE
+2
+loading data finished
+preparing data finished
+offloading cost:1.72761ms
+computing A:0.367013ms
+computing b:0.312099ms
+solving:0.129185ms
+training finished
