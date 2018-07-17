@@ -1,0 +1,29 @@
+covtype
+2
+loading data finished
+preparing data finished
+computing A with CPU:119.698s
+computing b with CPU:17.99s
+solving with CPU:0.016s
+training finished
+
+
+sonar
+2
+loading data finished
+preparing data finished
+computing A with CPU:0.061s
+computing b with CPU:0.003s
+solving with CPU:0.02s
+training finished
+
+
+IONOSPHERE
+2
+loading data finished
+preparing data finished
+computing A with CPU:0.072s
+computing b with CPU:0.005s
+solving with CPU:0.014s
+training finished
+

@@ -5,18 +5,36 @@
 #include <iostream>
 #include <fstream>
 #include <string.h>
+#include <string>
 #include <time.h>
 #include <helper_timer.h>
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
 #include <cula.h>
 #include <cula_blas_device.h>
-#define  N_COUNT 581012
-#define IN_COUNT 54
-#define L_COUNT 100
-#define C_COUNT 0.1
 
-#define GPU
+#define COVTYPE     // which dataset used
+#define GPU       // CPU or GPU used
+
+#ifdef COVTYPE
+int  N_COUNT = 581012;
+int  IN_COUNT = 54;
+int  nunique = 7;
+#endif
+#ifdef IONOSPHERE
+int N_COUNT = 351;
+int IN_COUNT = 34;
+int nunique = 2;
+#endif
+#ifdef SONAR
+int N_COUNT = 208;
+int IN_COUNT = 60;
+int nunique = 2;
+#endif
+int L_COUNT = 100;
+double C_COUNT = 0.1;
+
+
 #include "Eigen/Core"
 #include "Eigen/Cholesky"
 
@@ -143,80 +161,98 @@ int compare(const void *a, const void *b) {
 MatrixXd buildTargetMatrix(double *Y, int nLabels) {
 
 	// make a temporary copy of the labels array
-	double *tmpY = new double[nLabels];
-	double *Y_unique = new double[nLabels];
-	for (int i = 0; i < nLabels; i++) {
-		tmpY[i] = Y[i];
-	}
-	// sort the array of labels
-	qsort(tmpY, nLabels, sizeof(double), compare);
+    double *tmpY = new double[nLabels];
+    double *Y_unique = new double[nLabels];
+    for (int i = 0; i < nLabels; i++) {
+        tmpY[i] = Y[i];
+    }
+    // sort the array of labels
+    qsort(tmpY, nLabels, sizeof(double), compare);
 
-	// count unique labels
-	int nunique = 0;
-	Y_unique[0] = tmpY[0];
-	for (int i = 0; i < nLabels - 1; i++) {
-		if (tmpY[i] != tmpY[i + 1]) {
-			nunique++;
-			Y_unique[nunique] = tmpY[i + 1];
-		}
-	}
-	nunique++;
-	delete[] tmpY;
-	MatrixXd targets(nunique, nLabels);
-	targets.fill(0);
+    // count unique labels
+    nunique = 0;
+    Y_unique[0] = tmpY[0];
+    for (int i = 0; i < nLabels - 1; i++) {
+        if (tmpY[i] != tmpY[i + 1]) {
+            nunique++;
+            Y_unique[nunique] = tmpY[i + 1];
+        }
+    }
+    nunique++;
 
-	// fill in the ones
-	for (int i = 0; i < nLabels; i++) {
-		int index = 0;
-		while (index++ < nunique) {
-			if (Y[i] == Y_unique[index]) {
-				targets(index, i) = 1;
-				break;
-			}
-		}
-	}
-	delete[] Y_unique;
-	// normalize the targets matrix values (-1/1)
-	targets *= 2;
-	targets.array() -= 1;
-	return targets;
+    delete[] tmpY;
+
+    MatrixXd targets(nunique, nLabels);
+    targets.fill(0);
+
+
+    // fill in the ones
+    for (int i = 0; i < nLabels; i++) {
+        targets(Y[i],i) = 1;
+    }
+    delete[] Y_unique;
+    // normalize the targets matrix values (-1/1)
+    targets *= 2;
+    targets.array() -= 1;
+    return targets;
 }
 
-int main() {	
-	Eigen::setNbThreads(2);
-	cout<<Eigen::nbThreads()<<"\n";
-	double *x = (double *) malloc(IN_COUNT * N_COUNT * sizeof(double));
-	double *y = (double *) malloc(N_COUNT * sizeof(double));
+int main(int argc, const char *argv[]) {	
+    if (argc == 2) {
+        Eigen::setNbThreads(atoi(argv[1]));
+        std::cout << Eigen::nbThreads() << "\n";
+    }else if (argc == 4) {
+        Eigen::setNbThreads(atoi(argv[1]));
+        std::cout << Eigen::nbThreads() << "\n";
+        N_COUNT = (atoi(argv[2]) < N_COUNT) ? atoi(argv[2]) : N_COUNT;
+        L_COUNT = (atoi(argv[3]) < L_COUNT) ? atoi(argv[3]) : L_COUNT;
+    } else{
+        std::cout<<"parameters error\n";
+        return -1;
+    }
+    double *x = (double *) malloc(IN_COUNT * N_COUNT * sizeof(double));
+    double *y = (double *) malloc(N_COUNT * sizeof(double));
+#ifdef  IONOSPHERE
+    std::ifstream fin("..\\ionosphere.csv");
+#endif
+#ifdef COVTYPE
+    std::ifstream fin("..\\covtype.csv");
+#endif
+#ifdef SONAR
+    std::ifstream fin("..\\sonar.csv");
+#endif
+    std::string line;
 
-	std::ifstream fin("..\\covtype.data");
-	std::string line;
-	long long int row = 0;
-	int column;
-	double data[55];
-	while (getline(fin, line)) {
-		char cstr[100000];
-		strcpy(cstr, line.c_str());
-		char *p = strtok(cstr, ",");
-		column = 0;
-		while (p) {
-			data[column] = atoi(p);
+    long long int row = 0;
+    int column;
+    double *data =  (double*)malloc((IN_COUNT + 1)*sizeof(double));
+    int n_count = 0;
+    while (n_count++ < N_COUNT) {
+        getline(fin, line);
+        char cstr[100000];
+        strcpy_s(cstr, line.c_str());
+		char *ptr;
+        char *p = strtok_s(cstr, ",", &ptr);
+        column = 0;
+        while (p) {
+            data[column] = atoi(p);
 
-			p = strtok(NULL, ",");
-			if (column < IN_COUNT)
-				x[row * IN_COUNT + column] = data[column];
-			else
-				y[row] = data[column];
-			++column;
-		}
-		++row;
-	}
-	MatrixXd inW;    // input weight
-	MatrixXd bias;   // b
-	MatrixXd outW;   // output weight
-	MatrixXd mScore;  //predict result
+            p = strtok_s(NULL, ",",&ptr);
+            if (column < IN_COUNT)
+                x[row * IN_COUNT + column] = data[column];
+            else
+                y[row] = data[column];
+            ++column;
+        }
+        ++row;
+    }
+	free(data);
+    MatrixXd inW;    // input weight
+    MatrixXd bias;   // b
+    MatrixXd outW;   // output weight
+    MatrixXd mScore;  //predict result
 
-	elmTrain(x, IN_COUNT, N_COUNT, y, L_COUNT, C_COUNT, inW, bias, outW);
-	cout<< "training finished\n";
-	//elmPredict(x, IN_COUNT, N_COUNT, mScore, inW, bias, outW);
-	return 0;
+    elmTrain(x, IN_COUNT, N_COUNT, y, L_COUNT, C_COUNT, inW, bias, outW);
+    //elmPredict(x, IN_COUNT, N_COUNT, mScore, inW, bias, outW);
+    return 0;
 }
