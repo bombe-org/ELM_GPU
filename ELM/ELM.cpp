@@ -13,8 +13,8 @@
 #include <cula.h>
 #include <cula_blas_device.h>
 
-#define COVTYPE     // which dataset used
-#define GPU       // CPU or GPU used
+#define GPU
+#define COVTYPE
 
 #ifdef COVTYPE
 int  N_COUNT = 581012;
@@ -63,7 +63,7 @@ int elmTrain(double *X, int dims, int nsmp,
 	clock_t t1,t2;
 	t1 = clock();
 	// build matrices to solve Ax = b
-	MatrixXd A = (MatrixXd::Identity(nhn, nhn)).array() * (1 / C) + (H * H.transpose()).array();      //nhn*nhn
+	MatrixXd A = (H * H.transpose()).array();      //nhn*nhn
 	t2 = clock();
 	cout<< "computing A with CPU:" << (double)(t2 - t1)/CLOCKS_PER_SEC <<"s\n";
 	t1 = clock();
@@ -87,7 +87,7 @@ int elmTrain(double *X, int dims, int nsmp,
 	float *device_T;
 	float *device_A;
 	float *device_b;
-	float *device_outw;
+	//float *device_outw;
 
 	StopWatchInterface *timer;  
 	cudaThreadSynchronize();
@@ -95,17 +95,17 @@ int elmTrain(double *X, int dims, int nsmp,
 	sdkStartTimer(&timer);  
 	cudaMalloc((void **)&device_H, nsmp*nhn * sizeof(float));
 	cudaMalloc((void **)&device_H1, nsmp*nhn * sizeof(float));
-	cudaMalloc((void **)&device_T, 7*nhn * sizeof(float));
+	cudaMalloc((void **)&device_T, nunique*nhn * sizeof(float));
 	cudaMalloc((void **)&device_A, nhn*nhn * sizeof(float));
-	cudaMalloc((void **)&device_b, nhn*7 * sizeof(float));
-	cudaMalloc((void **)&device_outw, nhn*7 * sizeof(float));
+	cudaMalloc((void **)&device_b, nhn*nunique * sizeof(float));
+	//cudaMalloc((void **)&device_outw, nhn*nunique * sizeof(float));
 	cudaMemcpy(host_H,device_H, nsmp*nhn*sizeof(float),cudaMemcpyHostToDevice);
 	cudaMemcpy(host_H1,device_H1, nsmp*nhn*sizeof(float),cudaMemcpyHostToDevice);
 	cudaMemcpy(host_T,device_T, nsmp*nhn*sizeof(float),cudaMemcpyHostToDevice);  
 	cudaThreadSynchronize();
 	sdkStopTimer(&timer);  
 	double dSeconds = sdkGetTimerValue(&timer);  
-	cout<<"offloading cost:"<<dSeconds<<"ms\n";
+	cout<<"offloading cost: "<<dSeconds<<" ms\n";
 
 	sdkResetTimer(&timer);
 	sdkStartTimer(&timer);
@@ -113,31 +113,29 @@ int elmTrain(double *X, int dims, int nsmp,
 	cudaThreadSynchronize();
 	sdkStopTimer(&timer);  
 	dSeconds = sdkGetTimerValue(&timer);  
-	cout<<"computing A:"<<dSeconds<<"ms\n";
+	cout<<"computing A: "<<dSeconds<<" ms\n";
 
 	sdkResetTimer(&timer);
 	sdkStartTimer(&timer);
-	culaDeviceSgemm('N','N',7,nhn,nsmp,1,device_T,7,device_H,nsmp,0,device_b,7);
+	culaDeviceSgemm('N','N',nunique,nhn,nsmp,1,device_T,nunique,device_H,nsmp,0,device_b,nunique);
 	cudaThreadSynchronize();
 	sdkStopTimer(&timer);  
 	dSeconds = sdkGetTimerValue(&timer);  
-	cout<<"computing b:"<<dSeconds<<"ms\n";
+	cout<<"computing b: "<<dSeconds<<" ms\n";
 
-
-	double ipiv = 0.1;	
+	culaInt* IPIV = (culaInt*)malloc(nhn*sizeof(culaInt));
 	sdkResetTimer(&timer);
-	sdkStartTimer(&timer);
-	culaDeviceSgetrf(nhn,nhn,device_A,nhn,&ipiv);
-	culaDeviceSgetri(nhn,device_A,nhn,&ipiv);
-	culaDeviceSgemm('N','N',7,nhn,nhn,1,device_b,7,device_A,nhn,0,device_outw,7);
+	sdkStartTimer(&timer);	
+	culaDeviceSgesv(nhn,nunique,device_A,nhn,IPIV,device_b,nhn);
 	cudaThreadSynchronize();
 	sdkStopTimer(&timer);  
-	dSeconds = sdkGetTimerValue(&timer);  
-	cout<<"solving:"<<dSeconds<<"ms\n";
+	dSeconds = sdkGetTimerValue(&timer);
+	cout<<"A^-1 * b "<<dSeconds<<" ms\n";
 
-	float *host_outW = (float*)malloc(sizeof(float)*7*nhn);
-	cudaMemcpy(host_outW,device_outw, nhn*7*sizeof(float),cudaMemcpyDeviceToHost);
-	outW = Map<MatrixXd>((double*)host_outW,nhn,7);
+	float *host_outW = (float*)malloc(sizeof(float)*nunique*nhn);
+	cudaMemcpy(host_outW,device_b, nhn*nunique*sizeof(float),cudaMemcpyDeviceToHost);
+	outW = Map<MatrixXd>((double*)host_outW,nhn,nunique);
+	culaShutdown();
 #endif
 	return 0;
 }
